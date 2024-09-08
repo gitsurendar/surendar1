@@ -1,0 +1,76 @@
+CREATE TABLE Organisation (
+postgres(#     id SERIAL PRIMARY KEY,
+postgres(#     name VARCHAR(255) NOT NULL,
+postgres(#     status INT DEFAULT 0 NOT NULL,
+postgres(#     personal BOOLEAN DEFAULT FALSE,
+postgres(#     settings JSONB DEFAULT '{}'::jsonb,
+postgres(#     created_at BIGINT,
+postgres(#     updated_at BIGINT
+postgres(# );
+
+
+CREATE TABLE User (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    profile JSONB DEFAULT '{}'::jsonb NOT NULL,
+    status INT DEFAULT 0 NOT NULL,
+    settings JSONB DEFAULT '{}'::jsonb,
+    created_at BIGINT,
+    updated_at BIGINT
+);
+
+CREATE TABLE Role (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description VARCHAR(255),
+    org_id INT NOT NULL,
+    FOREIGN KEY (org_id) REFERENCES Organisation(id) ON DELETE CASCADE
+);
+
+CREATE TABLE Member (
+    id SERIAL PRIMARY KEY,
+    org_id INT NOT NULL,
+    user_id INT NOT NULL,
+    role_id INT NOT NULL,
+    status INT DEFAULT 0 NOT NULL,
+    settings JSONB DEFAULT '{}'::jsonb,
+    created_at BIGINT,
+    updated_at BIGINT,
+    FOREIGN KEY (org_id) REFERENCES Organisation(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES User(id) ON DELETE CASCADE,
+    FOREIGN KEY (role_id) REFERENCES Role(id) ON DELETE CASCADE
+);
+
+
+demo values for this tables 
+
+INSERT INTO organisation (name, status, personal, settings, created_at, updated_at)
+VALUES ('TechCorp', 1, FALSE, '{"theme": "dark"}', EXTRACT(EPOCH FROM NOW())::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT);
+
+INSERT INTO organisation (name, status, personal, settings, created_at, updated_at)
+VALUES ('EduOrg', 1, TRUE, '{"theme": "light"}', EXTRACT(EPOCH FROM NOW())::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT);
+
+
+INSERT INTO users (email, password, profile, status, settings, created_at, updated_at)
+VALUES ('john.doe@example.com', 'hashed_password_123', '{"first_name": "John", "last_name": "Doe"}', 1, '{"notifications": "enabled"}', EXTRACT(EPOCH FROM NOW())::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT);
+
+INSERT INTO users (email, password, profile, status, settings, created_at, updated_at)
+VALUES ('jane.smith@example.com', 'hashed_password_456', '{"first_name": "Jane", "last_name": "Smith"}', 1, '{"notifications": "disabled"}', EXTRACT(EPOCH FROM NOW())::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT);
+
+
+INSERT INTO role (name, description, org_id)
+VALUES ('Admin', 'Administrator with full access', 1);
+
+INSERT INTO role (name, description, org_id)
+VALUES ('Manager', 'Manager with limited access', 2);
+
+
+-- Add John Doe as an Admin in TechCorp (organisation id 1)
+INSERT INTO member (org_id, user_id, role_id, status, settings, created_at, updated_at)
+VALUES (1, 1, 1, 1, '{"project_access": "all"}', EXTRACT(EPOCH FROM NOW())::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT);
+
+-- Add Jane Smith as a Manager in EduOrg (organisation id 2)
+INSERT INTO member (org_id, user_id, role_id, status, settings, created_at, updated_at)
+VALUES (2, 2, 2, 1, '{"project_access": "limited"}', EXTRACT(EPOCH FROM NOW())::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT);
+
