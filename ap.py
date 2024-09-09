@@ -194,3 +194,78 @@ def delete_member(member_id: int, db: SessionLocal = Depends(get_db)):
     db.commit()
 
     return {"message": "Member deleted successfully!"}
+
+
+@app.get("/stats/role-wise-users")
+def get_role_wise_users(db: SessionLocal = Depends()):
+    result = db.query(Role.name, func.count(Member.user_id).label('user_count'))\
+               .join(Member, Role.id == Member.role_id)\
+               .group_by(Role.name)\
+               .all()
+    
+    return [{"role": role.name, "user_count": user_count} for role, user_count in result]
+
+@app.get("/stats/org-wise-members")
+def get_org_wise_members(db: SessionLocal = Depends()):
+    result = db.query(Organization.name, func.count(Member.user_id).label('member_count'))\
+               .join(Member, Organization.id == Member.org_id)\
+               .group_by(Organization.name)\
+               .all()
+
+    return [{"organization": org_name, "member_count": member_count} for org_name, member_count in result]
+
+@app.get("/stats/org-wise-role-wise-users")
+def get_org_role_wise_users(db: SessionLocal = Depends()):
+    result = db.query(Organization.name, Role.name, func.count(Member.user_id).label('user_count'))\
+               .join(Member, Organization.id == Member.org_id)\
+               .join(Role, Role.id == Member.role_id)\
+               .group_by(Organization.name, Role.name)\
+               .all()
+
+    return [{"organization": org_name, "role": role_name, "user_count": user_count} 
+            for org_name, role_name, user_count in result]
+    
+@app.get("/stats/org-wise-role-wise-users-filtered")
+def get_org_role_wise_users_filtered(
+    from_time: int = None,
+    to_time: int = None,
+    status: int = None,
+    db: SessionLocal = Depends()
+):
+    query = db.query(Organization.name, Role.name, func.count(Member.user_id).label('user_count'))\
+              .join(Member, Organization.id == Member.org_id)\
+              .join(Role, Role.id == Member.role_id)\
+              .group_by(Organization.name, Role.name)
+    
+    if from_time:
+        query = query.filter(Member.created_at >= from_time)
+    if to_time:
+        query = query.filter(Member.created_at <= to_time)
+    if status is not None:
+        query = query.filter(Member.status == status)
+
+    result = query.all()
+
+    return [{"organization": org_name, "role": role_name, "user_count": user_count} 
+            for org_name, role_name, user_count in result]
+@app.get("/stats/org-wise-members-filtered")
+def get_org_wise_members_filtered(
+    from_time: int = None,
+    to_time: int = None,
+    status: int = None,
+    db: SessionLocal = Depends()
+):
+    query = db.query(Organization.name, func.count(Member.user_id).label('member_count'))\
+              .join(Member, Organization.id == Member.org_id)\
+              .group_by(Organization.name)
+
+    if from_time:
+        query = query.filter(Member.created_at >= from_time)
+    if to_time:
+        query = query.filter(Member.created_at <= to_time)
+    if status is not None:
+        query = query.filter(Member.status == status)
+
+    result = query.all()
+
+    return [{"organization": org_name, "member_count": member_count} for org_name, member_count in result]
